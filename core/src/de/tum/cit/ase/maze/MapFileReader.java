@@ -287,7 +287,7 @@ public class MapFileReader {
                                 enemy = new Enemy(mobImage, p * 16 * 5, q * 16 * 5, width, height, enemyAnimation, pathfinding);
 //                                enemy = new Enemy(mobImage, 1*16*5, 1*16*5, width, height, enemyAnimation,
 //                                        pathfinding);
-                                movingEnemy = new MovingEnemy(p + 1 * 16 * 5, q + 1 * 16 * 5, 5f, mobImage,
+                                movingEnemy = new MovingEnemy(p * 16 * 5, q  * 16 * 5, 5f, mobImage,
                                         enemyRightAnimation, enemyLeftAnimation, enemyUpAnimation, enemyAnimation,
                                         pathfinding);
 
