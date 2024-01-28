@@ -1,5 +1,6 @@
 package de.tum.cit.ase.maze;
 
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -18,13 +19,11 @@ public class MovingEnemy extends Actor {
     private float stateTime;
     private Pathfinding pathfinding;
     private IntArray path;
-//    private Player player;
+    //    private Player player;
     private boolean[] allTiles;
 
 
-    public MovingEnemy(float x, float y, float speed, TextureRegion textureRegion,
-                       Animation<TextureRegion> rightAnimation, Animation<TextureRegion> leftAnimation
-            , Animation<TextureRegion> upAnimation, Animation<TextureRegion> DownAnimation, Pathfinding pathfinding) {
+    public MovingEnemy(float x, float y, float speed, TextureRegion textureRegion, Animation<TextureRegion> rightAnimation, Animation<TextureRegion> leftAnimation, Animation<TextureRegion> upAnimation, Animation<TextureRegion> DownAnimation, Pathfinding pathfinding) {
         setPosition(x, y);
         this.speed = speed;
         this.textureRegion = textureRegion;
@@ -40,99 +39,61 @@ public class MovingEnemy extends Actor {
     }
 
     public void act(float delta) {
+        // delta is the time in seconds since the last frame
         super.act(delta);
-
-//        float newX = getX() + speed * delta;
-//        setX(newX);
-
         stateTime += delta;
 
-//        if (MathUtils.randomBoolean(0.02f)) {
-       // if (MathUtils.randomBoolean(delta)) {
+        float playerPositionX = Player.getPlayerX();
+        float playerPositionY = Player.getPlayerY();
 
-            calculatePath(Player.getPlayerX(), Player.getPlayerY());
-            System.out.println("---------------------------------------------------------------");
-            System.out.println("player position: " + Math.floor(Player.getPlayerX() / (16 * 5)) +
-                    ", " + Math.floor(Player.getPlayerY() / (16 * 5)));
-            System.out.println("enemy is at position: " + "x = " + this.getX() / (16 * 5) + " y = " + this.getY() / (16 * 5));
+        int playerBoxPositionX = Math.round(playerPositionX / (16 * GameScreen.getUnitScale()));
+        int playerBoxPositionY = Math.round(playerPositionY / (16 * GameScreen.getUnitScale()));
 
-       // }
-//        //If the path is not empty
+        float enemyPositionX = getX();
+        float enemyPositionY = getY();
+
+        int enemyBoxPositionX = Math.round(enemyPositionX / (16 * GameScreen.getUnitScale()));
+        int enemyBoxPositionY = Math.round(enemyPositionY / (16 * GameScreen.getUnitScale()));
+
+        System.out.println("PlayerPosition: (" + playerPositionX + ", " + playerPositionY + ")");
+        System.out.println("PlayerBoxPosition: (" + playerBoxPositionX + ", " + playerBoxPositionY + ")");
+        System.out.println("EnemyBoxPosition: (" + enemyBoxPositionX + ", " + enemyBoxPositionY + ")");
+        System.out.println("EnemyPosition: (" + enemyPositionX + ", " + enemyPositionY + ")");
+
+        calculatePath(playerBoxPositionX, playerBoxPositionY, enemyBoxPositionX, enemyBoxPositionY);
+
+        // Set enemy position to player position
+        // if (playerBoxPositionX == enemyBoxPositionX && playerBoxPositionY == enemyBoxPositionY) {
+        //     setPosition(playerPositionX, playerPositionY);
+        //     return;
+        // }
+
         if (path.size >= 2) {
-            // Get the target position from the path
-            System.out.println("path.get(0): " + path.get(0) +" , GameScreen.getUnitscale() * 16: " + GameScreen.getUnitScale() * 16);
-            float X = path.get(0);
-            float Y = path.get(1);
-            float targetX = X * GameScreen.getUnitScale() * 16;
-            System.out.println("path.get(1): " + path.get(1) +" , GameScreen.getUnitscale() * 16: "  + GameScreen.getUnitScale() * 16);
-            float targetY = Y * GameScreen.getUnitScale() * 16;
-            System.out.println("getX(): " + getX());
-            System.out.println("getY(): " + getY());
-            System.out.println("All tiles: " + allTiles[61]);
+            int nextBoxY = path.get(0);
+            int nextBoxX = path.get(1);
 
-////            // values of the start position:
-////            int startX = MathUtils.floor(Player.getPlayerX() / (16 * 5));
-////            int startY = MathUtils.floor(Player.getPlayerY() / (16 * 5));
+            System.out.println("NextBox: (" + nextBoxX + ", " + nextBoxY + ")");
 
-            // Calculate the distance to the target position
-            float dx = targetX - getX();
-            float dy = targetY - getY();
-//
-////            float dx = startX - getX();
-////            float dy = startY - getY();
+            float nextPositionX = nextBoxX * 16 * GameScreen.getUnitScale();
+            float nextPositionY = nextBoxY * 16 * GameScreen.getUnitScale();
+
+            float dx = nextPositionX - enemyPositionX;
+            float dy = nextPositionY - enemyPositionY;
             float distance = (float) Math.sqrt(dx * dx + dy * dy);
-//
-////                        float speed = 50f; // adjust the speed as necessary;
-//
-//
-//
-//            // If the distance is greater than zero
-            if (distance > 0) {
-                // Calculate the movement speed based on the delta time
-                System.out.println("delta: " + delta);
-                float speed = 100f;
-                float vx = (speed * dx) / distance;
-                float vy = (speed * dy) / distance;
+            System.out.println("Distance: " + distance);
 
-                // Update the enemy's position based on the speed and delta time
-                float newX = getX() + vx * delta;
-                float newY = getY() + vy * delta;
+            float speed = 50f;
+            float speedX = (speed / distance) * dx;
+            float speedY = (speed / distance) * dy;
 
-                int newXcoord = (int) Math.ceil(newX/(16*GameScreen.getUnitScale()));
-                int xcoord = (int) Math.ceil(getX()/(16*GameScreen.getUnitScale()));
-                int newYcoord = (int) Math.ceil(newY/(16*GameScreen.getUnitScale()));
-                int ycoord = (int) Math.ceil(getY()/(16*GameScreen.getUnitScale()));
-                boolean walkableX = allTiles[(ycoord*15) + newXcoord];
-                boolean walkableY = allTiles[(newYcoord*15) + xcoord];
+            if (distance >= 0) {
+                float newEnemyPositionX = enemyPositionX + (speedX * delta);
+                float newEnemyPositionY = enemyPositionY + (speedY * delta);
 
-                System.out.println("newX: " + newX + " newY: " + newY);
-                System.out.println("targetX: " + targetX + " targetY: " + targetY);
-                System.out.println("getX: " + getX() + " getY: " + getY());
-                System.out.println("xcoord: " + xcoord + " ycoord: " + ycoord);
-                System.out.println("newXcoord: " + newXcoord + " newYcoord: " + newYcoord);
-                System.out.println("walkableX: " + walkableX + " walkableY: " + walkableY);
-
-
-//
-                // Update the enemy's position
-                if (distance >= 16 * GameScreen.getUnitScale()) {
-                    if(walkableX) {
-                        setPosition(newX, getY());
-                    } else {
-                        setPosition(getX(), newY);
-                    }
-
-                }
-
-                // Check if the enemy has reached the current target point
-                //if (Math.abs(newX - targetX) < 1 && Math.abs(newY - targetY) < 1) {
-                if (Math.abs(newX - targetX) < 1&& Math.abs(newY - targetY) < 1) {
-//                    // Remove both x and y from the path
-                    path.removeIndex(0);
-                    path.removeIndex(0);
-                }
-//
+                setPosition(newEnemyPositionX, newEnemyPositionY);
+                System.out.println("NewEnemyPosition: (" + newEnemyPositionX + ", " + newEnemyPositionX + ")");
             }
+
         }
 
     }
@@ -146,45 +107,18 @@ public class MovingEnemy extends Actor {
     public void draw(Batch batch, float parentAlpha) {
 
         if (speed > 0) {
-            batch.draw(rightAnimation.getKeyFrame(stateTime, true), getX(), getY(), getOriginX(), getOriginY(), getWidth(),
-                    getHeight(), getScaleX(),
-                    getScaleY(), getRotation());
+            batch.draw(rightAnimation.getKeyFrame(stateTime, true), getX(), getY(), getOriginX(), getOriginY(), getWidth(), getHeight(), getScaleX(), getScaleY(), getRotation());
         } else {
-            batch.draw(textureRegion, getX(), getY(), getOriginX(), getOriginY(), getWidth(), getHeight(), getScaleX(),
-                    getScaleY(), getRotation());
+            batch.draw(textureRegion, getX(), getY(), getOriginX(), getOriginY(), getWidth(), getHeight(), getScaleX(), getScaleY(), getRotation());
         }
     }
 
-    private void calculatePath(float playerX, float playerY) {
+    private void calculatePath(int playerBoxX, int playerBoxY, int enemyBoxX, int enemyBoxY) {
         // calculate the path using pathfinding
-//        int startX = MathUtils.floor(getBounds().x / GameScreen.getUnitScale() * 16);
-//        int startY = MathUtils.floor(getBounds().y / GameScreen.getUnitScale() * 16);
-//        int targetX = MathUtils.floor(player.getPlayerX() / GameScreen.getUnitScale() * 16);
-//        int targetY = MathUtils.floor(player.getPlayerY() / GameScreen.getUnitScale() * 16);
 
-
-        int startX = MathUtils.floor(getX() / (16 * 5));
-        int startY = MathUtils.floor(getY() / (16 * 5));
-        int targetX = MathUtils.floor(Player.getPlayerX() / (16 * 5));
-        int targetY = MathUtils.floor(Player.getPlayerY() / (16 * 5));
-
-        System.out.println(" inside calculate path,  targetX: " + targetX + " targetY: " + targetY);
-
-//        int targetX = MathUtils.floor(getX() / (16 * 5));
-//        int targetY = MathUtils.floor(getY() / (16 * 5));
-//        int startX = MathUtils.floor(Player.getPlayerX() / (16 * 5));
-//        int startY = MathUtils.floor(Player.getPlayerY() / (16 * 5));
-
-//        System.out.println("getBounds().x: " + getX() + " getBounds().y: " + getY());
-//        System.out.println("startX: " + startX + " startY: " + startY + " targetX: " + targetX + " targetY: " + targetY);
-//        System.out.println("startX: " + startX + " startY: " + startY + " targetX: " + targetX + " targetY: " + targetY);
-//        System.out.println("playerX/ (16 * 5): " + Math.floor(Player.getPlayerX() / (16 * 5)) + " playerY/(16*5):" + Math.floor(Player.getPlayerY() / (16 * 5)));
-
-
-        path = pathfinding.findPath(startX, startY, targetX, targetY);
+        path = pathfinding.findPath(enemyBoxX, enemyBoxY, playerBoxX, playerBoxY);
+        path.reverse(); // [(y1,x1), (y2,x2), ...]
         System.out.println("the path: " + path);
-        System.out.println("startX: " + startX + " startY: " + startY + " targetX: " + targetX + " targetY: " + targetY);
-
     }
 
 

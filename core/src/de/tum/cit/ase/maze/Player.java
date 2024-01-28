@@ -109,8 +109,7 @@ public class Player extends Actor {
         /*This method checks the state of our player.
          * If it's moving we can display the animations accordingly and move, if not,
          * the player stays in the same place and only displays the static sprite*/
-        return Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.LEFT) ||
-                Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.RIGHT);
+        return Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.RIGHT);
     }
 
     public void update(float delta, float sinusInput) { //All possible interactions and status changes of player.
@@ -143,8 +142,7 @@ public class Player extends Actor {
                 numberOfLives--;
                 cooldown = COOLDOWN_TIME;
                 timeOfDamageTaken = timeAlive;
-            } else
-                game.goToGameOverScreen();
+            } else game.goToGameOverScreen();
 
         }
 
@@ -294,8 +292,8 @@ public class Player extends Actor {
 //        System.out.println("overlap!!!!");
 //        System.out.println("values of x and y: " + getX() + " " + getY());
 //        System.out.println("values of x and y after mtv*depth: " + (getX() + mtv.normal.x * mtv.depth) + " " + (getY() + mtv.normal.y * mtv.depth));
-//        setPlayerX(this.getX() + mtv.normal.x * mtv.depth);
-//        setPlayerY(this.getY() + mtv.normal.y * mtv.depth);
+        setPlayerX(this.getX() + mtv.normal.x * mtv.depth);
+        setPlayerY(this.getY() + mtv.normal.y * mtv.depth);
 //        System.out.println("setX and setY: " + getX() + " " + getY());
         return mtv.normal;
 
