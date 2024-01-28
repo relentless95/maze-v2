@@ -40,7 +40,7 @@ public class Pathfinding {
         public Astar(int columns, int rows) {
             this.columns = columns;
             this.rows = rows;
-            open = new BinaryHeap(columns * 4, false);
+            open = new BinaryHeap(columns * rows, false);
             nodes = new PathNode[columns * rows];
             System.out.println("columns and rows: " + columns + " " + rows);
 

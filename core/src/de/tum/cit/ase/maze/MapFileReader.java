@@ -44,6 +44,8 @@ public class MapFileReader {
     private MazeRunnerGame game;
     private Pathfinding pathfinding;
 
+    private static boolean[] allTiles;
+
     public MapFileReader(MazeRunnerGame game) {
         this.maxX = 0;
         this.maxY = 0;
@@ -68,7 +70,7 @@ public class MapFileReader {
         try {
             FileInputStream input;
             if (MenuScreen.getSelectedFile() == null) {
-                File filePath = new File(System.getProperty("user.dir") + File.separator + "maps" + File.separator + "level-1.properties");
+                File filePath = new File(System.getProperty("user.dir")  + File.separator + ".." + File.separator + "maps" + File.separator + "level-1.properties");
                 input = new FileInputStream(filePath);
                 System.out.println(System.getProperty("user.dir"));
             } else {
@@ -212,6 +214,7 @@ public class MapFileReader {
                         // values 0 to 5 represent non walkable tiles;
                         if (prop >= 0 && prop <= 5) {
                             walkableTiles[y * (maxX + 1) + x] = false;
+                            allTiles = walkableTiles;
                         }
 
                         if (prop == 1) {
@@ -486,5 +489,9 @@ public class MapFileReader {
 
     public ArrayList<MovingEnemy> getMovingEnemies() {
         return MovingEnemies;
+    }
+
+    public static boolean[] getAllTiles() {
+        return allTiles;
     }
 }
