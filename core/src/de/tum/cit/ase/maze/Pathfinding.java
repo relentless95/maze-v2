@@ -4,15 +4,15 @@ import com.badlogic.gdx.utils.BinaryHeap;
 import com.badlogic.gdx.utils.BinaryHeap.Node;
 import com.badlogic.gdx.utils.IntArray;
 
+/**
+ * The original @author of the code is Nathan Sweet. This is an adapted version of his code to fit the game needs.
+ * The original version can be found at https://gist.github.com/NathanSweet/7587981.
+ */
 public class Pathfinding {
     private Astar astar;
 
 
     public Pathfinding(int columns, int rows, boolean[] map) {
-        System.out.println("map.length: " + map.length);
-//        for( boolean element: map){
-//            System.out.println(element);
-//        }
         astar = new Astar(columns, rows) {
             protected boolean isValid(int x, int y) {
                 return !map[x + y * columns];
@@ -40,15 +40,15 @@ public class Pathfinding {
         public Astar(int columns, int rows) {
             this.columns = columns;
             this.rows = rows;
-            open = new BinaryHeap(columns * rows, false);
+            open = new BinaryHeap(columns * 4, false);
             nodes = new PathNode[columns * rows];
-            System.out.println("columns and rows: " + columns + " " + rows);
 
         }
 
         public IntArray getPath(int startX, int startY, int targetX, int targetY) {
             this.targetX = targetX;
             this.targetY = targetY;
+
 
             path.clear();
             open.clear();
@@ -57,10 +57,6 @@ public class Pathfinding {
             if (runID < 0) runID = 1;
 
             int index = startY * columns + startX;
-//            System.out.println("nodes.length : " + nodes.length);
-//            System.out.println("index: " + startY + ", " + columns + ", " + startX);
-//            System.out.println("index: " + startY + ", " + columns + ", " + startX);
-//            System.out.println(startY * columns + startX);
             PathNode root = nodes[index];
 
             if (root == null) {
@@ -94,19 +90,9 @@ public class Pathfinding {
                 int y = node.y;
                 if (x < lastColumn) {
                     addNode(node, x + 1, y, 10);
-//                    if (y < lastRow) {
-//                        addNode(node, x + 1, y + 1, 14); //Diagonal positions
-//                    }
-//                    if (y > 0) {
-//                        addNode(node, x + 1, y - 1, 14);
-//                    }
                 }
                 if (x > 0) {
                     addNode(node, x - 1, y, 10);
-//                    if (y < lastRow) {
-//                        addNode(node, x - 1, y + 1, 14);
-//                    }
-//                    if (y > 0) addNode(node, x - 1, y - 1, 14);
                 }
                 if (y < lastRow) {
                     addNode(node, x, y + 1, 10);
@@ -156,12 +142,10 @@ public class Pathfinding {
             return true;
         }
 
-        // might not be needed;
         public int getWidth() {
             return columns;
         }
 
-        // might not be needed;
 
         public int getHeight() {
             return rows;

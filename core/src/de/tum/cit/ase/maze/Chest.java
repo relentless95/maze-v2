@@ -5,7 +5,10 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 
-
+/**
+ *A class that extend GameObject that sets the chest where
+ * the key is located to exit the maze.
+ **/
 public class Chest extends GameObject {
 
     private Animation<TextureRegion> chestAnimation;
@@ -13,21 +16,17 @@ public class Chest extends GameObject {
     private boolean chestOpen;
 
     public Chest(TextureRegion textureRegion, float x, float y, float width, float height, Animation<TextureRegion> chestAnimation) {
-        super(textureRegion, x, y, new Rectangle(x, y, width, height), new Rectangle(x, y, width, height));
+        super(textureRegion, x, y, 32, 46, new Rectangle(x,y, width, height), new Rectangle(x,y, width, height));
         this.chestAnimation = chestAnimation;
         this.stateTime = 0;
         this.chestOpen = false;
-        setBoundaryPolygon(10);
-
+        setBoundarySquare(8*9, 6);
     }
 
     public void update(float delta) {
         stateTime += delta;
     }
 
-    public TextureRegion getCurrentFrame() {
-        return chestAnimation.getKeyFrame(stateTime, true);
-    }
 
     public boolean isChestOpen() {
         return chestOpen;

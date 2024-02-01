@@ -4,6 +4,9 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 
+/**
+ * Sets spike traps for the game, and all its attributes.
+ */
 public class Trap extends GameObject {
 
 
@@ -17,13 +20,12 @@ public class Trap extends GameObject {
     private static float COOLDOWN_TIME = 5;
     private float cooldown;
     public Trap(TextureRegion textureRegion, float x, float y, float width, float height, Animation<TextureRegion> trapAnimation) {
-        super(textureRegion, x, y, new Rectangle(x, y, width, height), new Rectangle(x, y, width, height));
+        super(textureRegion, x, y, 32, 40, new Rectangle(x, y, width, height), new Rectangle(x, y, width, height));
         this.trapAnimation = trapAnimation;
         this.stateTime = 0;
         this.spikesFullyExtended = false;
         cooldown = 0;
-//        this.spikesExtendedCycle = false;
-
+        setBoundarySquare(72, 18);
     }
 
     public void update(float delta) {
@@ -65,30 +67,12 @@ public class Trap extends GameObject {
         // get the current frame from the trap's animation
 
 
-//        TextureRegion currentFrame = getCurrentFrame();
-//        float animationFrames = trapAnimation.getKeyFrames().length;
-//        float animationDuration = trapAnimation.getAnimationDuration();
-//        float frameDuration = animationDuration / animationFrames; // Duration per frame
-//
-//        int currentFrameIndex = (int) ((stateTime % animationDuration) / frameDuration);
-//        System.out.println("from the trap class: " + currentFrameIndex);
-
-
-//        return trapAnimation.getKeyFrameIndex(stateTime);
-//        TextureRegion currentFrame = getCurrentFrame();
-//        int currentFrameIndex = trapAnimation.getKeyFrameIndex(stateTime);
-//        System.out.println(currentFrameIndex);
             if (isThirdFrame()) {
-//            trapState = TrapState.FULLY_EXTENDED;
                 spikesFullyExtended = true;
-//            spikesExtendedCycle = true;
-//                System.out.println("spikes are fully extended!!!");
 
             } else if (!isThirdFrame()) {
-//            trapState = TrapState.HIDDEN;
             spikesFullyExtended = false;
-//            spikesExtendedCycle = false;
-//                System.out.println("spikes are not out");
+
             }
 
     }

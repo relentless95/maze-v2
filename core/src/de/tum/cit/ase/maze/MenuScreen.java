@@ -4,35 +4,27 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Event;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
-import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import games.spooky.gdx.nativefilechooser.NativeFileChooser;
 import games.spooky.gdx.nativefilechooser.NativeFileChooserCallback;
 import games.spooky.gdx.nativefilechooser.NativeFileChooserConfiguration;
 
-import javax.swing.plaf.TextUI;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Locale;
 
 /**
  * The MenuScreen class is responsible for displaying the main menu of the game.
- * It extends the LibGDX Screen class and sets up the UI components for the menu.
+ * It's very similar to the rest of screen classes, except we have a file chooser, which additionally sets as default directory the
+ * path to the game's repository.
  */
 public class MenuScreen implements Screen {
 
@@ -41,12 +33,11 @@ public class MenuScreen implements Screen {
     // file handle
     public static FileHandle selectedFile;
     // preferences a simple way to store small data to the application like settings, small game state saves and so on. works like a hashmap.
-    Preferences prefs;
-    public MazeRunnerGame game;
+    public Preferences prefs;
+    private Image backgroundTexture;
 
-    private ShapeRenderer shapeRenderer;
-    private TextureRegion backgroundTexture;
-
+    private final MazeRunnerGame game;
+    private Table table;
 
     /**
      * Constructor for MenuScreen. Sets up the camera, viewport, stage, and UI elements.
@@ -54,96 +45,54 @@ public class MenuScreen implements Screen {
      * @param game The main game class, used to access global resources and methods.
      */
     public MenuScreen(MazeRunnerGame game) {
+
         this.game = game;
         var camera = new OrthographicCamera();
+
         camera.zoom = 1.5f; // Set camera zoom for a closer view
-        camera.position.set(camera.viewportWidth / 2f, camera.viewportHeight / 2f, 0);
-
         Viewport viewport = new ScreenViewport(camera); // Create a viewport with the camera
+
         stage = new Stage(viewport, game.getSpriteBatch()); // Create a stage for UI elements
-// for the file chooser
-        backgroundTexture = game.getBackgroundTexture();
 
+        backgroundTexture = new Image(game.getBackgroundTexture());
+        backgroundTexture.setScale(2.5f);
+        backgroundTexture.setPosition(0, 0, 0); // the last zero is the alignment
+        stage.addActor(backgroundTexture);
 
-        Image backgroundImage = new Image(game.getBackgroundTexture());
-//        System.out.println("x and y of the image: " + backgroundImage.getImageX() + ", " + backgroundImage.getImageY() + backgroundImage.getOriginX() +
-//                backgroundImage.getOriginY());
-//        System.out.println("background image width and height: " + backgroundImage.getWidth() + backgroundImage.getHeight());
-
-//        System.out.println("stage x and y: " + stage.getX);
-//        backgroundImage.setFillParent(true);
-//        backgroundImage.setScaling(Scaling.fit);
-//        backgroundImage.setScaling(Scaling.fill);
-//        backgroundImage.setSize(stage.getWidth(), stage.getHeight());
-//        backgroundImage.setPosition(0,0);
-//        backgroundImage.setSize(1.0f* backgroundImage.getImageHeight(), 1.0f * backgroundImage.getWidth());
-//        backgroundImage.setSize(2000, 2000);
-//        System.out.println("x and y of the image: " + backgroundImage.getImageX() + ", " + backgroundImage.getImageY() + backgroundImage.getOriginX() +
-//                backgroundImage.getOriginY());
-//        stage.addActor(backgroundImage);
-
-
-        Table table = new Table(); // Create a table for layout
+        table = new Table(); // Create a table for layout
         table.setFillParent(true); // Make the table fill the stage
         stage.addActor(table); // Add the table to the stage
-
-        shapeRenderer = new ShapeRenderer();
-
-        System.out.println(stage.getHeight() + " " + stage.getWidth());
-
         // Add a label as a title
-        table.add(new Label("Artemaze", game.getSkin(), "title")).padBottom(80).row();
-
-
+        table.add(new Label("ARTEMAZE", game.getSkin(), "title")).padBottom(80).row();
         //quit
-        TextButton quitButton = new TextButton("Quit", game.getSkin());
-//        quitButton.setPosition(500, 150);
-//        uiStage.addActor(quitButton);
 
+        TextButton quitButton = new TextButton("Quit", game.getSkin());
         quitButton.addListener(
                 (Event e) -> {
                     if (!(e instanceof InputEvent) || !((InputEvent) e).getType().equals(InputEvent.Type.touchDown)) {
                         return false;
                     }
-
-
                     Gdx.app.exit();
                     return false;
                 });
 
         // Create and add a button to go to the game screen
+
         TextButton goToGameButton = new TextButton("Start new game", game.getSkin());
-        table.add(goToGameButton).width(300).row();
         goToGameButton.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 game.goToGame(); // Change to the game screen when button is pressed
             }
         });
-        TextButton Continue = new TextButton("Continue", game.getSkin());
-        if (game.getGameScreen() != null) {
-            table.add(Continue).width(300).row();
-            Continue.addListener(new ChangeListener() {
-                @Override
-                public void changed(ChangeEvent event, Actor actor) {
-                    game.resumeGame(); // Change to the game screen when button is pressed
-                }
-            });
-        }
+        table.add(goToGameButton).width(300).row();
+
         // create a new button to load the map;
-        TextButton chooseMapFile = new TextButton("Choose Map file", game.getSkin());
+        TextButton chooseMapFile = new TextButton("Select a map", game.getSkin());
         table.add().padBottom(30).row(); // to add space between the two buttons
-        table.add(chooseMapFile).padBottom(30).width(300).row();
+        table.add(chooseMapFile).width(300).row();
 
-        table.add(quitButton).padBottom(30).width(300).row();
-
-        table.columnDefaults(2).padRight(20);
-
-        Label volumeLabel = new Label("Volume: ", game.getSkin(), "title");
-        volumeLabel.setFontScale(0.5f);
-        table.add(volumeLabel).padBottom(10).row();
-
-
+        table.add(quitButton).width(300);
 
         chooseMapFile.addListener(
                 new ChangeListener() {
@@ -152,14 +101,14 @@ public class MenuScreen implements Screen {
 
                         NativeFileChooserConfiguration conf = mapFileChooserConfiguration();
                         conf.title = "Select map file";
+                        conf.directory = Gdx.files.absolute(System.getProperty("user.dir")+ "/maps"); // go to  maps
+                        // directory at once
 
                         game.getFileChooser().chooseFile(conf, new NativeFileChooserCallback() {
                                     @Override
-                                    public void onFileChosen(FileHandle file) throws NullPointerException {
+                                    public void onFileChosen(FileHandle file){
                                         selectedFile = file;
-                                        if (file == null) {
-                                            throw new NullPointerException();
-                                        } else {
+                                        if (file != null) {
                                             prefs.putString("lastMap", file.parent().file().getAbsolutePath());
                                         }
                                     }
@@ -178,9 +127,16 @@ public class MenuScreen implements Screen {
                         );
                     }
                 });
+        table.add().padBottom(60).row(); // to add space between the two buttons
+        table.add().padBottom(60).row(); // to add space between the two buttons
+        Label volume = new Label("Set volume:", game.getSkin(), "title");
+        volume.setFontScale(0.5f);
+        table.add(volume).padBottom(80).row();
+
+
         Slider volumeSlider = new Slider(0f, 1f, 0.1f, false, game.getSkin());
-        volumeSlider.setValue(0.5f);
-        table.add(volumeSlider).row();
+        table.add(volumeSlider).padBottom(30).row();
+        volumeSlider.setValue(game.getVolume());
         volumeSlider.addListener(
                 new ChangeListener() {
                     @Override
@@ -191,18 +147,25 @@ public class MenuScreen implements Screen {
                 }
         );
 
+        TextButton hardMode = new TextButton("Hard mode", game.getSkin());
+        table.add().padBottom(30).row(); // to add space between the two buttons
+        table.add(hardMode).width(250).row();
+        hardMode.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                game.setHardModeOn(true); // Change to the game screen when button is pressed
+            }
+        });
+
         //  implementing the file choosing
         prefs = Gdx.app.getPreferences("MazeRunnerGame");
+
+        table.center();
     }
 
     @Override
     public void render(float delta) {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT); // Clear the screen
-        game.getSpriteBatch().setProjectionMatrix(stage.getCamera().combined);
-        // Draw stage borders
-//        drawStageBorders();
-        drawBackground();
-
         stage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f)); // Update the stage
         stage.draw(); // Draw the stage
 
@@ -211,63 +174,7 @@ public class MenuScreen implements Screen {
     @Override
     public void resize(int width, int height) {
         stage.getViewport().update(width, height, true); // Update the stage viewport on resize
-//        updateBackgroundImageScaling();
     }
-
-//    private void updateBackgroundImageScaling() {
-//        Image backgroundImage = findBackgroundImage();
-//        if (backgroundImage != null) {
-//            backgroundImage.setScaling(Scaling.fill);
-////            TextureRegionDrawable drawable = (TextureRegionDrawable) backgroundImage.getDrawable();
-////            float imageWidth = drawable.getMinWidth();
-////            float imageHeight = drawable.getMinHeight();
-//
-//
-//            backgroundImage.setSize(stage.getWidth(), stage.getHeight());
-//            System.out.println(" stage.getViewport().getWorldWidth(), stage.getViewport().getWorldHeight() : " + stage.getViewport().getWorldWidth() + stage.getViewport().getWorldHeight());
-////            if(stageAspectRatio > imageAspectRatio)
-//
-//
-//        }
-//    }
-
-//    private Image findBackgroundImage() {
-//        for (Actor actor : stage.getActors()) {
-//            if (actor instanceof Image) {
-//                Image image = (Image) actor;
-//                if (image.getDrawable() instanceof TextureRegionDrawable) {
-//                    TextureRegionDrawable drawable = (TextureRegionDrawable) image.getDrawable();
-//                    if (drawable.getRegion() == game.getBackgroundTexture()) {
-//                        System.out.println("yes!!!!!!!!");
-//                        return image;
-//                    }
-//                }
-//            }
-//
-//        }
-//        System.out.println("Nooooooo!!!!!");
-//        return null;
-//    }
-
-    private void drawStageBorders() {
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-
-        shapeRenderer.setColor(Color.RED);
-
-        float stageWidth = stage.getViewport().getWorldWidth();
-        float stageHeight = stage.getViewport().getWorldHeight();
-
-        shapeRenderer.rect(0, 0, stageWidth, stageHeight);
-
-        shapeRenderer.end();
-    }
-
-    private void drawBackground() {
-        game.getSpriteBatch().begin();
-        game.getSpriteBatch().draw(backgroundTexture, -500, -250, 3000, 3000);
-        game.getSpriteBatch().end();
-    }
-
 
     @Override
     public void dispose() {
@@ -278,7 +185,7 @@ public class MenuScreen implements Screen {
     @Override
     public void show() {
         // Set the input processor so the stage can receive input events
-        Gdx.input.setInputProcessor(stage);
+        Gdx.input.setInputProcessor(this.stage);
     }
 
     // The following methods are part of the Screen interface but are not used in this screen.
@@ -292,6 +199,7 @@ public class MenuScreen implements Screen {
 
     @Override
     public void hide() {
+        Gdx.input.setInputProcessor(null);
     }
 
     public NativeFileChooserConfiguration mapFileChooserConfiguration() {
@@ -326,4 +234,5 @@ public class MenuScreen implements Screen {
     public static FileHandle getSelectedFile() {
         return selectedFile;
     }
+
 }

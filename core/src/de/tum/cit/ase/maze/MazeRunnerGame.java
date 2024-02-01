@@ -3,6 +3,7 @@ package de.tum.cit.ase.maze;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -11,10 +12,15 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.Array;
 import games.spooky.gdx.nativefilechooser.NativeFileChooser;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
+
 
 /**
- * The MazeRunnerGame class represents the core of the Maze Runner game.
- * It manages the screens and global resources like SpriteBatch and Skin.
+ * The game class may not be the most important class in our video game,
+ * but is still fundamental as we load most of the assets and animations here.
+ * Screen changing logic is also implemented here.
  */
 public class MazeRunnerGame extends Game {
     // Screens
@@ -22,6 +28,7 @@ public class MazeRunnerGame extends Game {
     private GameScreen gameScreen;
     private GameOverScreen gameOverScreen;
     private VictoryScreen victoryScreen;
+    private PausedScreen pauseScreen;
 
 
     // Sprite Batch for rendering
@@ -30,7 +37,8 @@ public class MazeRunnerGame extends Game {
     // UI Skin
     private Skin skin;
 
-    CustomInputProcessor gameAcceptedInput;
+    // must investigate what this is for
+    private final CustomInputProcessor gameAcceptedInput;
 
     private Animation<TextureRegion> objectAnimation;
     private Animation<TextureRegion> trapAnimation;
@@ -43,12 +51,32 @@ public class MazeRunnerGame extends Game {
     private Animation<TextureRegion> chestAnimation;
     private Animation<TextureRegion> entryPointAnimation;
     private Animation<TextureRegion> exitAnimation;
+    private Animation<TextureRegion> livesAnimation;
+    private TextureRegion backgroundTexture;
+
+    private TextureRegion bgGameOverTexture;
+
+    private TextureRegion bgVictoryTexture;
+    private TextureRegion bgPauseTexture;
 
     // file chooser
-    private final NativeFileChooser fileChooser;
+    private NativeFileChooser fileChooser;
     private Music backgroundMusic;
+    private int highestScoreValue;
+    private String highestScore;
 
-    private TextureRegion backgroundTexture;
+    private Sound gameOverFx;
+    private Sound victoryFx;
+    private Sound damagedFx;
+    private Sound ObjectCollectedFx;
+    private Sound walkingFx;
+    private Sound entryClosedFx;
+    private Sound mazeExitOpenFx;
+    private float globalVolume;
+    private boolean hardModeOn;
+
+
+
 
 
     /**
@@ -62,7 +90,6 @@ public class MazeRunnerGame extends Game {
         this.fileChooser = fileChooser;
         gameAcceptedInput = new CustomInputProcessor(false, false, true, false,
                 false, false, false, false, false);
-
     }
 
     /**
@@ -70,14 +97,17 @@ public class MazeRunnerGame extends Game {
      */
     @Override
     public void create() {
+
         spriteBatch = new SpriteBatch(); // Create SpriteBatch
         skin = new Skin(Gdx.files.internal("craft/craftacular-ui.json")); // Load UI skin
 
-        Texture backgroundTexture = new Texture(Gdx.files.internal("clouds.png"));
-        this.backgroundTexture = new TextureRegion(backgroundTexture);
+        Texture menuBackgroundTexture = new Texture(Gdx.files.internal("backgroundImage.png"));
+        this.backgroundTexture = new TextureRegion(menuBackgroundTexture);
 
-        //        this.loadObjectAnimation(4,1,"things.png", 3); // to load the object animation
-//        this.loadObjectAnimation(0,3,4,1,"things.png", 3); // to load the object animation
+        loadMusicAndSFX();
+
+        goToMenu(); // Navigate to the menu screen
+
         this.loadObjectAnimation(0, 3, 4, 1, "things.png", 3, "object"); // to load the object animation
         this.loadObjectAnimation(6, 9, 4, 1, "things.png", 3, "trap"); // to load the object animation for spikes
 
@@ -85,84 +115,48 @@ public class MazeRunnerGame extends Game {
         this.loadObjectAnimation(6, 9, 6, 1, "mobs.png", 3, "enemyRight");
         this.loadObjectAnimation(6, 9, 5, 1, "mobs.png", 3, "enemyLeft");
         this.loadObjectAnimation(6, 9, 7, 1, "mobs.png", 3, "enemyUp");
+
         this.loadSpecialAnimation(6, 8, 0, 4, "things.png", "chest");
         this.loadSpecialAnimation(0, 2, 0, 4, "things.png", "entryPoint");
         this.loadSpecialAnimation(3, 5, 0, 4, "things.png", "exit");
 
-        // Play some background music
-        // Background sound
-        backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("background.mp3"));
+
+        Texture pauseBgTexture = new Texture(Gdx.files.internal("pausescreenbg.png"));
+        this.bgPauseTexture = new TextureRegion(pauseBgTexture);
+
+        Texture gameOverTexture = new Texture(Gdx.files.internal("gameoverscreen.png"));
+        this.bgGameOverTexture = new TextureRegion(gameOverTexture);
+
+        Texture victoryTexture = new Texture(Gdx.files.internal("victoryscreenbg.png"));
+        this.bgVictoryTexture = new TextureRegion(victoryTexture);
+
         backgroundMusic.setLooping(true);
-//        backgroundMusic.play();
-        goToMenu(); // Navigate to the menu screen
+
+        backgroundMusic.setVolume(0.7f);
+
+        backgroundMusic.play();
+
+        loadHighestScore();
+
+        hardModeOn = false;
+
+    }
+
+    private void loadMusicAndSFX(){
+        globalVolume = 1f;
+        backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("GoblinsDen.mp3"));
+        gameOverFx = Gdx.audio.newSound(Gdx.files.internal("gameoversound.mp3"));
+        victoryFx = Gdx.audio.newSound(Gdx.files.internal("victorysound.mp3"));
+        damagedFx = Gdx.audio.newSound(Gdx.files.internal("damagedsound.mp3"));
+        ObjectCollectedFx = Gdx.audio.newSound(Gdx.files.internal("collectedsoundeffect.mp3"));
+        walkingFx = Gdx.audio.newSound(Gdx.files.internal("walkingsound.mp3"));
+        entryClosedFx = Gdx.audio.newSound(Gdx.files.internal("entryclosedsound.mp3"));
+        mazeExitOpenFx = Gdx.audio.newSound(Gdx.files.internal("exitopenedsound.mp3"));
     }
 
     /**
-     * Switches to the menu screen.
+     * loading the animations.
      */
-    public void goToMenu() {
-        this.setScreen(new MenuScreen(this)); // Set the current screen to MenuScreen
-        if (gameScreen != null) {
-            gameScreen.dispose(); // Dispose the game screen if it exists
-            gameScreen = null;
-        }
-    }
-
-    public void pause() {
-        this.setScreen(new MenuScreen(this)); // Set the current screen to MenuScreen
-    }
-
-    public void goToGameOverScreen() {
-        gameOverScreen = new GameOverScreen(this);
-        this.setScreen(gameOverScreen); // Set the current screen to MenuScreen
-        gameOverScreen.show();
-        if (gameScreen != null) {
-            gameScreen.dispose(); // Dispose the game screen if it exists
-            gameScreen = null;
-        }
-    }
-
-
-    /**
-     * Switches to the game screen.
-     */
-    public void goToGame() {
-        gameScreen = new GameScreen(this);
-        this.setScreen(gameScreen); // Set the current screen to GameScreen
-        // When you want to use the stage's input processor
-        gameScreen.setInputProcessorOnlyForStage();
-        // When you want to use a custom input processor (e.g., for mouse input handling in other screens)
-        gameScreen.setInputProcessor(gameAcceptedInput);
-        if (menuScreen != null) {
-            menuScreen.dispose(); // Dispose the menu screen if it exists
-            menuScreen = null;
-        }
-    }
-
-    public void goToVictoryScreen() {
-        victoryScreen = new VictoryScreen(this);
-        this.setScreen(victoryScreen); // Set the current screen to GameScreen
-        // When you want to use the stage's input processor
-        victoryScreen.setInputProcessorOnlyForStage();
-        // When you want to use a custom input processor (e.g., for mouse input handling in other screens)
-        if (gameScreen != null) {
-            gameScreen.dispose(); // Dispose the menu screen if it exists
-            gameScreen = null;
-        }
-    }
-
-    public void resumeGame() {
-        gameScreen.setPaused(false);
-        gameScreen.setResuming(true);
-        gameScreen.setInputProcessorOnlyForStage();
-        gameScreen.setInputProcessor(gameAcceptedInput);
-        this.setScreen(gameScreen); // Set the current screen to GameScreen
-        if (menuScreen != null) {
-            menuScreen.dispose(); // Dispose the menu screen if it exists
-            menuScreen = null;
-        }
-    }
-
 
     private void loadObjectAnimation(int startCol, int endCol, int spriteRow, int spriteCol, String imageNameInQuotes, int frames, String type) {
         spriteCol = (spriteCol != 0) ? spriteCol : 1;
@@ -170,7 +164,6 @@ public class MazeRunnerGame extends Game {
         Texture thingsSheet = new Texture(Gdx.files.internal(imageNameInQuotes));
         int frameWidth = 16;
         int frameHeight = 16;
-        int animationFrames = frames;
 
         // libGDX internal Array instead of ArrayList because of performance
         Array<TextureRegion> objectFrames = new Array<>(TextureRegion.class);
@@ -204,10 +197,16 @@ public class MazeRunnerGame extends Game {
             enemyUpAnimation = new Animation<>(0.199f, objectFrames);
         }
 
+
+        if (type.equals("lives")) {
+            livesAnimation = new Animation<>(0.199f, objectFrames);
+        }
+
         objectFrames.clear();
 
 
     }
+
 
     private void loadSpecialAnimation(int startCol, int endCol, int startRow, int endRow,
                                       String imageNameInQuotes, String type) {
@@ -237,8 +236,6 @@ public class MazeRunnerGame extends Game {
             reversedAnimationFrames.add(animationFrames.get(i));
         }
 
-//        System.out.println("animationFrames.size: " + animationFrames.size);
-//        System.out.println("reversedAnimationFrames.size: " + reversedAnimationFrames.size);
 
 
         Animation<TextureRegion> anim = new Animation<TextureRegion>(2f, animationFrames);
@@ -264,6 +261,25 @@ public class MazeRunnerGame extends Game {
 
     }
 
+    // started method to lead the highest score
+    public void loadHighestScore() {
+        Properties properties = new Properties();
+        try {
+            String scoreToLoad;
+            if (LevelBuilder.getLevel() == null) {
+                // Default to a specific level if LevelBuilder.getLevel() is null
+                scoreToLoad = "level-1.properties";
+            } else {
+                scoreToLoad = LevelBuilder.getLevel();
+            }
+            FileInputStream input = new FileInputStream("highscores/" + scoreToLoad + "_highest_score.properties");
+            properties.load(input);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        highestScoreValue = Integer.parseInt(properties.getProperty("highestScoreValue", "0"));
+        highestScore = properties.getProperty("highestScore", "None");
+    }
 
     /**
      * Cleans up resources when the game is disposed.
@@ -275,6 +291,87 @@ public class MazeRunnerGame extends Game {
         spriteBatch.dispose(); // Dispose the spriteBatch
         skin.dispose(); // Dispose the skin
     }
+
+    public void goToMenu() {
+        this.setScreen(new MenuScreen(this)); // Set the current screen to MenuScreen
+        if (!backgroundMusic.isPlaying()){
+            backgroundMusic.play();
+        }
+        if (gameScreen != null) {
+            gameScreen.dispose(); // Dispose the game screen if it exists
+            gameScreen = null;
+        }
+        if (pauseScreen != null) {
+            pauseScreen.dispose(); // Dispose the menu screen if it exists
+            pauseScreen = null;
+        }
+        if (victoryScreen != null) {
+            victoryScreen.dispose(); // Dispose the menu screen if it exists
+            victoryScreen = null;
+        }
+        if (gameOverScreen != null) {
+            gameOverScreen.dispose(); // Dispose the menu screen if it exists
+            gameOverScreen = null;
+        }
+    }
+
+    public void pause() {
+        if (getScreen() == gameScreen) {
+            if (!gameScreen.isHasVictoryScreenBeenSet() && !gameScreen.isPlayerDead()) {
+                pauseScreen = new PausedScreen(this);
+                this.setScreen(pauseScreen); // Set the current screen to MenuScreen
+            }
+        }
+    }
+
+    public void goToGameOverScreen() {
+        gameOverScreen = new GameOverScreen(this);
+        this.setScreen(gameOverScreen); // Set the current screen to MenuScreen
+        if (gameScreen != null) {
+            gameScreen.dispose(); // Dispose the game screen if it exists
+            gameScreen = null;
+        }
+    }
+
+
+    /**
+     * Switches to the game screen.
+     */
+    public void goToGame() {
+        gameScreen = new GameScreen(this);
+        this.setScreen(gameScreen); // Set the current screen to GameScreen
+        // When you want to use the stage's input processor
+        // When you want to use a custom input processor (e.g., for mouse input handling in other screens)
+        gameScreen.setInputProcessor(gameAcceptedInput);
+        if (menuScreen != null) {
+            menuScreen.dispose(); // Dispose the menu screen if it exists
+            menuScreen = null;
+        }
+    }
+
+    public void goToVictoryScreen(int elapsedTime) {
+        victoryScreen = new VictoryScreen(this, elapsedTime, highestScoreValue, highestScore);
+        this.setScreen(victoryScreen); // Set the current screen to GameScreen
+        if (gameScreen != null) {
+            gameScreen.dispose(); // Dispose the menu screen if it exists
+            gameScreen = null;
+        }
+    }
+
+
+    public void resumeGame() {
+        gameScreen.setPaused(false);
+        // When you want to use a custom input processor (e.g., for mouse input handling in other screens)
+        //gameScreen.setInputProcessor(gameAcceptedInput);
+        this.setScreen(gameScreen); // Set the current screen to GameScreen
+        if (pauseScreen != null) {
+            pauseScreen.dispose(); // Dispose the menu screen if it exists
+            pauseScreen = null;
+        }
+    }
+
+    // Getter/setter methods
+
 
     // Getter methods
     public Skin getSkin() {
@@ -304,7 +401,6 @@ public class MazeRunnerGame extends Game {
     }
 
 
-
     public Animation<TextureRegion> getEnemyRightAnimation() {
         return enemyRightAnimation;
     }
@@ -317,6 +413,11 @@ public class MazeRunnerGame extends Game {
         return enemyUpAnimation;
     }
 
+    public Animation<TextureRegion> getLivesAnimation() {
+        return livesAnimation;
+    }
+
+
     public SpriteBatch getSpriteBatch() {
         return spriteBatch;
     }
@@ -325,23 +426,88 @@ public class MazeRunnerGame extends Game {
         return fileChooser;
     }
 
-    public GameScreen getGameScreen() {
-        return gameScreen;
-    }
 
     public void setVolume(float volume) {
-        backgroundMusic.setVolume(volume);
+        backgroundMusic.setVolume(volume*0.7f);
+        globalVolume = volume;
     }
 
     public float getVolume() {
-        return backgroundMusic.getVolume();
+        return globalVolume;
     }
 
     public TextureRegion getBackgroundTexture() {
         return backgroundTexture;
     }
 
-    public void setBackgroundTexture(TextureRegion backgroundTexture) {
-        this.backgroundTexture = backgroundTexture;
+    public TextureRegion getBgGameOverTexture() {
+        return bgGameOverTexture;
+    }
+
+    public TextureRegion getBgVictoryTexture() {
+        return bgVictoryTexture;
+    }
+
+    public TextureRegion getBgPauseTexture() {
+        return bgPauseTexture;
+    }
+
+    public int getHighestScoreValue() {
+        return highestScoreValue;
+    }
+
+    public void setHighestScoreValue(int highestScoreValue) {
+        this.highestScoreValue = highestScoreValue;
+    }
+
+    public String getHighestScore() {
+        return highestScore;
+    }
+
+    public void setHighestScore(String highestScore) {
+        this.highestScore = highestScore;
+    }
+
+    public Music getBackgroundMusic() {
+        return backgroundMusic;
+    }
+
+
+    public boolean isHardModeOn() {
+        return hardModeOn;
+    }
+
+    public void setHardModeOn(boolean hardModeOn){
+        this.hardModeOn = hardModeOn;
+    }
+
+
+    public Sound getGameOverFx() {
+        return gameOverFx;
+    }
+
+    public Sound getVictoryFx() {
+        return victoryFx;
+    }
+
+    public Sound getDamagedFx() {
+        return damagedFx;
+    }
+
+    public Sound getObjectCollectedFx() {
+        return ObjectCollectedFx;
+    }
+
+    public Sound getWalkingFx() {
+        return walkingFx;
+    }
+
+    public Sound getEntryClosedFx() {
+        return entryClosedFx;
+    }
+
+
+    public Sound getMazeExitOpenFx() {
+        return mazeExitOpenFx;
     }
 }

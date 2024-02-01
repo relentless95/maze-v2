@@ -4,6 +4,10 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 
+/**
+ *A class that extend GameObject that sets the exits of the maze
+ * for each map.
+ **/
 public class Exit extends GameObject {
 
 
@@ -13,11 +17,11 @@ public class Exit extends GameObject {
 
 
     public Exit(TextureRegion textureRegion, float x, float y, float width, float height, Animation<TextureRegion> exitAnimation) {
-        super(textureRegion, x, y, new Rectangle(x, y, width, height), new Rectangle(x, y, width, height));
+        super(textureRegion, x, y, 32, 48, new Rectangle(x,y, width, height), new Rectangle(x,y, width, height));
         this.exitAnimation = exitAnimation;
         this.stateTime = 0;
         this.exitOpen = false;
-        setBoundaryPolygon(10);
+        setBoundarySquare(8*10, 8*4);
     }
 
     public void update(float delta) {

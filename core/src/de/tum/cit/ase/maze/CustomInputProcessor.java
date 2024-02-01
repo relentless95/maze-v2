@@ -2,8 +2,8 @@ package de.tum.cit.ase.maze;
 
 import com.badlogic.gdx.InputProcessor;
 
-/*A class which lets us create a custom input processing setting, to better control and handle
-    input in any screen.
+/**A class which lets us create a custom input processing setting, to better control and handle
+        *input in any screen. It mostly helps fix bugs related to undesired input handling. E.g: mouse.
 */
 public class CustomInputProcessor implements InputProcessor {
     boolean keyDown, keyUp, keyTyped, touchDown, touchUp,
