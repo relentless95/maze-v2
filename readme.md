@@ -54,4 +54,4 @@ Artemaze is open-source software licensed under the ```MIT license```.... lol.
 
 ## Developers
 
-This game was developed by TUM Heilbronn BIE students ```@relentless95``` and ```@Oscar Navarro``` as an assignment for the module "Fundamentals of Programming".
+This game was developed by TUM Heilbronn BIE students @relentless95 and ```@Oscar Navarro``` as an assignment for the module "Fundamentals of Programming".
